@@ -1,0 +1,38 @@
+# Menggunakan CTE sebagai tabel sementara dengan memasukkan kolom-kolom yang berhubungan dengan analisa yang dibutuhkan #
+WITH kebutuhan AS (
+  SELECT
+  kf_final_transaction.transaction_id,
+  kf_final_transaction.date,
+  kf_final_transaction.branch_id,
+  kf_kantor_cabang.branch_name,
+  kf_kantor_cabang.kota,
+  kf_kantor_cabang.provinsi,
+  kf_kantor_cabang.rating AS rating_cabang,
+  kf_final_transaction.customer_name,
+  kf_product.product_id,
+  kf_product.product_name,
+  kf_product.price AS actual_price,
+  kf_final_transaction.discount_percentage,
+
+  # Menentukan laba dengan ketentuan rentang harga yang sudah ditetapkan #
+  CASE
+  WHEN kf_product.price < 50000 THEN kf_product.price*0.10
+  WHEN kf_product.price BETWEEN 50000 AND 100000 THEN kf_product.price*0.15
+  WHEN kf_product.price BETWEEN 100000 AND 300000 THEN kf_product.price*0.2
+  WHEN kf_product.price BETWEEN 300000 AND 500000 THEN kf_product.price*0.25
+  WHEN kf_product.price > 500000 THEN kf_product.price*0.3
+  END AS presentase_gross_laba,
+
+  # Menghitung harga setelah diskon #
+  kf_product.price*(1-kf_final_transaction.discount_percentage) AS nett_sales,
+
+  # Melihat penilaian konsumen terhadap transaksi yang dilakukan #
+  kf_final_transaction.rating AS rating_transaksi
+
+  FROM kimia_farma.kf_final_transaction AS kf_final_transaction
+  LEFT JOIN kimia_farma.kf_kantor_cabang AS kf_kantor_cabang
+  ON kf_final_transaction.branch_id=kf_kantor_cabang.branch_id
+  LEFT JOIN kimia_farma.kf_product AS kf_product
+  ON kf_final_transaction.product_id=kf_product.product_id
+)
+SELECT*FROM kebutuhan;
